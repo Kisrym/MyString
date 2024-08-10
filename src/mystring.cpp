@@ -10,7 +10,6 @@ MyString::MyString()
 MyString::MyString(const char *string)
     : str(nullptr), size(0)
 {
-    //std::cout << "calling constructor" << std::endl;
     size = get_len(string);
 
     str = new char[size];
@@ -20,36 +19,15 @@ MyString::MyString(const char *string)
     }
 }
 
-MyString::MyString(const std::string &string)
-    : str(nullptr), size(string.length())
-{
-    str = new char[size];
-    for (std::size_t i = 0; i < size; i++) {
-        str[i] = string[i];
-    }
-
-}
-
-MyString::MyString(const MyString &other){
-    //std::cout << "calling copy constructor" << std::endl;
-    size = other.size;
-    str = new char[size];
-
-    for (std::size_t i = 0; i < size; i++) {
-        str[i] = other.str[i];
-    }
-}
-
 MyString::MyString(MyString &&other) noexcept
     : str(other.str), size(other.size)
 {
-    //std::cout << "calling move constructor" << std::endl;
     other.str = nullptr;
     other.size = 0;
 }
 
 MyString::~MyString() {
-    delete str;
+    delete [] str;
 }
 
 std::ostream &operator<<(std::ostream &os, const MyString &obj) {
@@ -58,7 +36,6 @@ std::ostream &operator<<(std::ostream &os, const MyString &obj) {
 }
 
 MyString &MyString::operator=(const MyString &other) {
-    //std::cout << "calling copy constructor by assignment operator" << std::endl;
     if (this == &other) {
         return *this;
     }
@@ -78,7 +55,6 @@ MyString &MyString::operator=(const MyString &other) {
 }
 
 MyString &MyString::operator=(MyString &&other) {
-    //std::cout << "calling move constructor by assignment operator" << std::endl;
     if (this == &other) {
         return *this;
     }
@@ -96,7 +72,10 @@ MyString &MyString::operator=(MyString &&other) {
 }
 
 MyString MyString::operator[](std::pair<std::size_t, std::size_t> range) const {
-    if (range.second == -1) {range.second = size;}
+    if (range.second == std::string::npos) { // mesma coisa que -1
+        range.second = size;
+    }
+
     if (range.first >= size || range.second > size || range.first > range.second) {
         throw std::out_of_range("Index fora dos limites");
     }
@@ -104,7 +83,7 @@ MyString MyString::operator[](std::pair<std::size_t, std::size_t> range) const {
     std::size_t len = range.second - range.first;
     char *slice = new char[len + 1];
     slice[len] = '\0';
-    std::strncpy(slice, str + range.first, len);
+    copy(slice, str + range.first, len);
 
     MyString result(slice);
     delete [] slice;
@@ -112,13 +91,13 @@ MyString MyString::operator[](std::pair<std::size_t, std::size_t> range) const {
 }
 
 MyString operator+(const MyString &lhs, const MyString &rhs){
-    size_t new_size = lhs.size + rhs.size;
+    std::size_t new_size = lhs.size + rhs.size;
 
     char* buff = new char[new_size + 1];
-    buff[new_size+1] = '\0';
+    buff[new_size] = '\0';
 
-    std::strncpy(buff, lhs.str, lhs.size);
-    std::strcat(buff, rhs.str);
+    lhs.copy(buff, lhs.str, lhs.size);
+    lhs.concat(buff, rhs.str);
 
     MyString temp(buff);
     delete [] buff;
@@ -130,9 +109,10 @@ MyString &MyString::operator+=(const char* string) {
     char* newStr = new char[newSize + 1];
 
     if (str != nullptr) {
-        std::strcpy(newStr, str);
+        copy(newStr, str, size);
     }
-    std::strcat(newStr, string);
+    
+    concat(newStr, string);
 
     delete [] str;
     this->str = newStr;
@@ -146,7 +126,7 @@ MyString &MyString::operator+=(const char caracter) {
     newStr[size + 1] = '\0';
 
     if (str != nullptr) {
-        std::strcpy(newStr, str);
+        copy(newStr, str, size);
     }
 
     newStr[size] = caracter;
@@ -172,7 +152,7 @@ bool MyString::operator==(const char *string) const {
 }
 
 // private methods
-std::size_t MyString::get_len(const char* string) const {
+inline std::size_t MyString::get_len(const char* string) const {
     std::size_t size = 0;
     while (string[size] != '\0') {
         size++;
@@ -219,6 +199,34 @@ std::size_t MyString::find_substring(const char* substring, std::pair<int, int> 
         }
     }
     return std::string::npos;
+}
+
+inline void MyString::copy(char *str1, const char *str2, std::size_t num) const {
+    if (sizeof(str1) < sizeof(str2)) {
+        throw std::length_error("Origin length bigger than destination length");
+    }
+
+    for (std::size_t i = 0; i < num; i++) {
+        str1[i] = str2[i];
+    }
+
+}
+
+void MyString::concat(char *str1, const char *str2) const noexcept {
+    std::size_t str1_len = get_len(str1);
+    std::size_t str2_len = get_len(str2);
+
+    std::size_t new_size = str1_len + str2_len;
+    char* new_str = new char[new_size + 1];
+
+    copy(new_str, str1, str1_len);
+
+    for (std::size_t i = 0; i < str2_len; i++) {
+        new_str[i + str1_len] = str2[i];
+    }
+
+    copy(str1, new_str, new_size);
+    delete [] new_str;
 }
 
 // member methods
@@ -331,7 +339,7 @@ MyString MyString::trim() const noexcept {
     return temp;
 }
 
-std::vector<MyString> MyString::split(const char separator) const {
+std::vector<MyString> MyString::split(const char separator) const noexcept {
     std::vector<char> temp;
     std::vector<MyString> result;
 
@@ -352,7 +360,7 @@ std::vector<MyString> MyString::split(const char separator) const {
     return result;
 }
 
-std::vector<MyString> MyString::split(const char* separator) const {
+std::vector<MyString> MyString::split(const char* separator) const noexcept {
     std::vector<std::size_t> indexes = this->findAll(separator);
     MyString temp("");
     std::vector<MyString> result;

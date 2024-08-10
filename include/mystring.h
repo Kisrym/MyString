@@ -1,9 +1,7 @@
 #ifndef MYSTRING_H
 #define MYSTRING_H
 
-#include <cstring>
 #include <ostream>
-#include <iostream>
 #include <vector>
 
 #include "mystringiterator.h"
@@ -16,15 +14,17 @@ private:
     char *str;
     std::size_t size;
 
-    std::size_t get_len(const char* string) const;
+    inline std::size_t get_len(const char* string) const;
     std::size_t find_substring(const char* substring, std::pair<int, int> range = {0, -1}) const;
+    inline void copy(char *str1, const char *str2, std::size_t num) const;
+    void concat(char *str1, const char *str2) const noexcept;
 
 public:
     // constructors
     MyString();
     MyString(const char *string);
-    MyString(const std::string &string);
-    MyString(const MyString &other);
+    MyString(const std::string &string) : MyString(string.c_str()) {};
+    MyString(const MyString &other) : MyString(other.str) {};
     MyString(MyString &&other) noexcept;
 
     // member operator overloadings
@@ -52,8 +52,8 @@ public:
     // member methods
     inline std::size_t len() const noexcept {return size;};
     MyString capitalize();
-    std::vector<MyString> split(const char separator) const;
-    std::vector<MyString> split(const char *separator) const;
+    std::vector<MyString> split(const char separator) const noexcept;
+    std::vector<MyString> split(const char *separator) const noexcept;
     bool isAlpha() const noexcept;
     bool isNumeric() const noexcept;
     bool isAlphaNum() const noexcept;
@@ -69,7 +69,7 @@ public:
     const char *c_str() const noexcept {return str;};
 
     template <typename T>
-    MyString join(const T &container) const {
+    MyString join(const T &container) const noexcept{
         if (container.empty()) {
             return MyString("");
         }
@@ -87,7 +87,7 @@ public:
 
     // static methods
     template <typename T>
-    static bool contains(const T &value, const std::vector<T> &vec) {
+    static bool contains(const T &value, const std::vector<T> &vec) noexcept{
         for (const auto &v : vec) {
             if (value == v) {
                 return true;
