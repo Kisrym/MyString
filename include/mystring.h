@@ -113,7 +113,7 @@ public:
     }
 
     const_iterator cend() const {
-        return MyStringIterator(str);
+        return MyStringIterator(str + size);
     }
     
 };

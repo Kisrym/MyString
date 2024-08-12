@@ -7,8 +7,6 @@ include_directories(include)
 
 set(SOURCE_FILES 
     src/mystring.cpp
-    include/mystring.h
-    include/mystringiterator.h
 )
 
 add_executable(main ${SOURCE_FILES} main.cpp)
